@@ -25,7 +25,7 @@ file["combined_feature"]=file.apply(combined_features,axis=1)
 
 cv = CountVectorizer()
 count_matrix=cv.fit_transform(file["combined_feature"])
-@st.cache
+
 st.title('Anime Recommender')
 selected_anime = st.selectbox(
 'Which anime did you like?',
