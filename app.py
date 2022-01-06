@@ -8,7 +8,7 @@ import pickle
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-animes_dict = pickle.load(open('model/animes_dict.pkl','rb'))
+animes_dict = pickle.load(open('animes_dict.pkl','rb'))
 animes = pd.DataFrame(animes_dict)
 cv = CountVectorizer()
 count_matrix=cv.fit_transform(animes["combined_feature"])
