@@ -1,46 +1,44 @@
 import streamlit as st
-# To make things easier later, we're also importing numpy and pandas for
-# working with sample data.
-import numpy as np
-import pandas as pd
-import pickle
+import numpy as np # linear algebra
+import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
+
+import os
+for dirname, _, filenames in os.walk('/kaggle/input'):
+    for filename in filenames:
+        print(os.path.join(dirname, filename))
 
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-animes_dict = pickle.load(open('animes_dict.pkl','rb'))
-animes = pd.DataFrame(animes_dict)
+file = pd.read_csv('anime.csv')
+file = file.reset_index()
+
+features = ['Rating Score','Number Votes','Studios','Synopsis', 'Tags', 'Episodes']
+def combined_features(row):
+    return str(row["Rating Score"])+" "+ str(row["Number Votes"])+" "+ str(row["Studios"])+" "+ str(row["Synopsis"])+" "+ str(row["Tags"])+" "+ str(row["Episodes"])+" "
+def get_title_from_index(index):
+    return file[file["index"] == index]["Name"].values[0]
+def get_index_from_title(title):
+    return file[file["Name"] == title]["index"].values[0]
+
+file["combined_feature"]=file.apply(combined_features,axis=1)
+
 cv = CountVectorizer()
-count_matrix=cv.fit_transform(animes["combined_feature"])
-similarity = cosine_similarity(count_matrix)
-@st.cache()
-def recommend(anime):
-
-    index = animes[animes["Name"] == anime]["index"].values[0]
-    distances = sorted(list(enumerate(similarity[index])), reverse=True, key=lambda x: x[1])
-    recommended_anime_names = []
-    recommended_anime_summary = []
-    recommended_anime_tags = []
-    for i in distances[1:6]:
-        # fetch the anime poster
-        # anime_id = animes.iloc[i[0]].anime_id
-        # recommended_anime_posters.append(fetch_poster(anime_id))
-        recommended_anime_names.append(animes.iloc[i[0]].Name)
-        recommended_anime_summary.append(animes.iloc[i[0]].Synopsis)
-        recommended_anime_tags.append(animes.iloc[i[0]].Tags)
-
-    return recommended_anime_names ,recommended_anime_summary,recommended_anime_tags
-
-
+count_matrix=cv.fit_transform(file["combined_feature"])
+@st.cache
 st.title('Anime Recommender')
 selected_anime = st.selectbox(
 'Which anime did you like?',
-(animes['Name'].values))
+(file['Name'].values))
 
 if st.button('Recommend'):
     with st.spinner(text='In progress'):
-         recommendations,summary,tags = recommend(selected_anime)
-         st.success('Done')
-         for i in range(5):
-             st.write(f"{i+1})"+"Title  :  "+str(recommendations[i]))
-             st.write("Summary  : "+str(summary[i]))
+        cosine_sim = cosine_similarity(count_matrix)
+        liked_movie_index = cosine_sim[get_index_from_title(selected_anime)]
+        similar_anime = list(enumerate(liked_movie_index))
+# similar_anime_sorted = sorted(similar_anime)
+        similar_anime.sort(key = lambda row: row[1],reverse=True)
+# print(similar_anime)
+    st.success('Done')
+    for i in range(10):
+        st.write(get_title_from_index(similar_anime[i][0]))
